@@ -1,0 +1,294 @@
+{
+  "type": "FeatureCollection",
+  "generator": "overpass-turbo",
+  "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL.",
+  "timestamp": "2026-05-30T11:52:16Z",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/302423220",
+        "addr:city": "Santa Cruz de la Sierra",
+        "addr:street": "Avenida Ejército Nacional",
+        "amenity": "school",
+        "barrier": "yes",
+        "name": "U.E. Colegio Cristo Rey"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -63.1826742,
+              -17.7915172
+            ],
+            [
+              -63.1825422,
+              -17.7922859
+            ],
+            [
+              -63.1819692,
+              -17.7921795
+            ],
+            [
+              -63.1820959,
+              -17.7913827
+            ],
+            [
+              -63.1826425,
+              -17.7914921
+            ],
+            [
+              -63.1826742,
+              -17.7915172
+            ]
+          ]
+        ]
+      },
+      "id": "way/302423220"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/164295629",
+        "highway": "residential",
+        "lane_markings": "no",
+        "name": "CRISTO REY",
+        "surface": "dirt"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -63.1307601,
+            -17.8381785
+          ],
+          [
+            -63.1305594,
+            -17.8385506
+          ],
+          [
+            -63.1301186,
+            -17.8390907
+          ],
+          [
+            -63.1297156,
+            -17.8395739
+          ],
+          [
+            -63.1296182,
+            -17.8396651
+          ]
+        ]
+      },
+      "id": "way/164295629"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/164969103",
+        "highway": "residential",
+        "name": "Calle Cristo Rey"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -63.0951499,
+            -17.8239968
+          ],
+          [
+            -63.0951255,
+            -17.8234169
+          ],
+          [
+            -63.0951202,
+            -17.8233146
+          ],
+          [
+            -63.095092,
+            -17.8227727
+          ],
+          [
+            -63.0950888,
+            -17.8226321
+          ],
+          [
+            -63.095077,
+            -17.8221234
+          ],
+          [
+            -63.0950761,
+            -17.8220019
+          ],
+          [
+            -63.0950721,
+            -17.8214662
+          ],
+          [
+            -63.0950722,
+            -17.8213196
+          ],
+          [
+            -63.095039,
+            -17.8208048
+          ],
+          [
+            -63.0950267,
+            -17.820342
+          ],
+          [
+            -63.0950109,
+            -17.8197005
+          ],
+          [
+            -63.0949994,
+            -17.8190507
+          ],
+          [
+            -63.0949999,
+            -17.8189778
+          ],
+          [
+            -63.0949611,
+            -17.8184866
+          ],
+          [
+            -63.0949638,
+            -17.8181628
+          ],
+          [
+            -63.0949367,
+            -17.8179087
+          ]
+        ]
+      },
+      "id": "way/164969103"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1473431861",
+        "highway": "residential",
+        "lane_markings": "no",
+        "name": "CRISTO REY",
+        "surface": "paving_stones"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -63.1315383,
+            -17.8366697
+          ],
+          [
+            -63.1312672,
+            -17.8372214
+          ],
+          [
+            -63.1309282,
+            -17.8378667
+          ]
+        ]
+      },
+      "id": "way/1473431861"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "way/1473431862",
+        "highway": "residential",
+        "lane_markings": "no",
+        "name": "CRISTO REY",
+        "surface": "dirt"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            -63.1309282,
+            -17.8378667
+          ],
+          [
+            -63.1307601,
+            -17.8381785
+          ]
+        ]
+      },
+      "id": "way/1473431862"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/4753419121",
+        "addr:street": "Avenida Arroyitos",
+        "name": "Cristo Rey III",
+        "name:es": "Cristo Rey III",
+        "shop": "hardware"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -63.0785875,
+          -17.8306063
+        ]
+      },
+      "id": "node/4753419121"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/6305880485",
+        "addr:street": "Avenida San Martín de Porres",
+        "amenity": "place_of_worship",
+        "name": "Capilla Cristo Rey",
+        "religion": "christian"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -63.2147038,
+          -17.8246041
+        ]
+      },
+      "id": "node/6305880485"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10566024811",
+        "amenity": "pharmacy",
+        "healthcare": "pharmacy",
+        "name": "Farmacia CM Cristo Rey"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -63.1469819,
+          -17.8511005
+        ]
+      },
+      "id": "node/10566024811"
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "@id": "node/10566873789",
+        "addr:city": "Santa Cruz de la Sierra",
+        "addr:street": "Calle Los Sauces",
+        "amenity": "place_of_worship",
+        "denomination": "seventh_day_adventist",
+        "name": "Iglesia Adventista del Septimo Dia Cristo Rey",
+        "religion": "christian"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -63.1506717,
+          -17.8474214
+        ]
+      },
+      "id": "node/10566873789"
+    }
+  ]
+}
