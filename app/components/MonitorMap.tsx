@@ -201,157 +201,222 @@ export default function MonitorMap() {
   }, [position]);
 
   return (
-    <main className="min-h-screen bg-slate-950 p-5 text-white">
-      <section className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[360px_1fr]">
-        <aside className="space-y-5">
-          <div className="rounded-3xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur">
-            <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-300">
-              SIG Monitoreo Infantil
-            </p>
+    <main className="min-h-screen bg-[#020617] text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.22),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(239,68,68,0.14),transparent_30%)]" />
 
-            <h1 className="mt-3 text-3xl font-black leading-tight">
-              Panel de seguimiento en tiempo real
-            </h1>
+      <section className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col gap-5 p-5">
+        <header className="rounded-4xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-cyan-300">
+                Sistema de Información Geográfica
+              </p>
 
-            <p className="mt-3 text-sm text-slate-300">
-              Usa las teclas W, A, S y D para mover la ubicación simulada del
-              nino.
-            </p>
-          </div>
+              <h1 className="mt-2 text-3xl font-black tracking-tight lg:text-4xl">
+                Monitoreo Infantil en Tiempo Real
+              </h1>
 
-          <div
-            className={`rounded-3xl border p-5 shadow-2xl ${
-              inside
-                ? "border-green-400/40 bg-green-500/15"
-                : "border-red-400/50 bg-red-500/20"
-            }`}
-          >
-            <p className="text-sm text-slate-300">Estado actual</p>
-
-            <div className="mt-2 flex items-center gap-3">
-              <div
-                className={`h-4 w-4 rounded-full ${
-                  inside ? "bg-green-400" : "animate-pulse bg-red-400"
-                }`}
-              />
-
-              <h2 className="text-xl font-bold">
-                {inside ? "Dentro del área segura" : "Fuera del área segura"}
-              </h2>
-            </div>
-
-            <p className="mt-3 text-sm text-slate-200">{lastMessage}</p>
-
-            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-2xl bg-slate-950/50 p-3">
-                <p className="text-slate-400">Latitud</p>
-                <p className="font-mono">{position.lat.toFixed(6)}</p>
-              </div>
-
-              <div className="rounded-2xl bg-slate-950/50 p-3">
-                <p className="text-slate-400">Longitud</p>
-                <p className="font-mono">{position.lng.toFixed(6)}</p>
-              </div>
-            </div>
-
-            <div className="mt-3 rounded-2xl bg-slate-950/50 p-3 text-sm">
-              <p className="text-slate-400">Validación backend</p>
-              <p className="font-semibold">
-                {backendInside === null
-                  ? "Esperando respuesta..."
-                  : backendInside
-                    ? "PostGIS: dentro del polígono"
-                    : "PostGIS: fuera del polígono"}
+              <p className="mt-2 max-w-3xl text-sm text-slate-300">
+                Supervisión geoespacial del niño dentro del área segura del U.E.
+                Colegio Cristo Rey mediante análisis espacial y alertas
+                automáticas.
               </p>
             </div>
-          </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold">Eventos</h2>
-              <span className="rounded-full bg-red-500 px-3 py-1 text-xs font-bold">
-                {alertCount} alertas
-              </span>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              {history.length === 0 ? (
-                <p className="text-sm text-slate-400">
-                  Todavía no se registraron eventos.
-                </p>
-              ) : (
-                history.map((item, index) => (
-                  <div
-                    key={`${item}-${index}`}
-                    className="rounded-2xl bg-slate-950/50 p-3 text-sm text-slate-200"
-                  >
-                    {item}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-
-          <div className="rounded-3xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur">
-            <h2 className="text-lg font-bold">Controles</h2>
-
-            <div className="mt-4 grid grid-cols-3 gap-2 text-center text-sm font-bold">
-              <div />
-              <kbd className="rounded-xl bg-slate-800 p-3">W</kbd>
-              <div />
-              <kbd className="rounded-xl bg-slate-800 p-3">A</kbd>
-              <kbd className="rounded-xl bg-slate-800 p-3">S</kbd>
-              <kbd className="rounded-xl bg-slate-800 p-3">D</kbd>
-            </div>
-          </div>
-        </aside>
-
-        <section className="overflow-hidden rounded-3xl border border-white/10 bg-white/10 p-3 shadow-2xl backdrop-blur">
-          {!inside && (
-            <div className="mb-3 rounded-2xl border border-red-300/40 bg-red-500 px-5 py-4 text-center font-black shadow-xl">
-              🚨 ALERTA: el nino salió del área segura del Kinder
-            </div>
-          )}
-
-          <div className="h-[calc(100vh-64px)] min-h-155 overflow-hidden rounded-2xl">
-            <MapContainer
-              center={[position.lat, position.lng]}
-              zoom={18}
-              scrollWheelZoom
-              className="h-full w-full"
+            <div
+              className={`rounded-2xl px-5 py-4 text-center shadow-xl ${
+                inside
+                  ? "bg-green-500/20 ring-1 ring-green-300/40"
+                  : "bg-red-500/25 ring-1 ring-red-300/50"
+              }`}
             >
-              <TileLayer
-                attribution="&copy; OpenStreetMap contributors"
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-200">
+                Estado actual
+              </p>
 
-              <GeoJSON
-                data={kinderPolygon}
-                style={{
-                  color: inside ? "#22c55e" : "#ef4444",
-                  weight: 4,
-                  fillColor: inside ? "#22c55e" : "#ef4444",
-                  fillOpacity: 0.25,
-                }}
-              />
+              <div className="mt-2 flex items-center justify-center gap-2">
+                <span
+                  className={`h-3 w-3 rounded-full ${
+                    inside ? "bg-green-400" : "animate-pulse bg-red-400"
+                  }`}
+                />
 
-              <Marker position={[-17.791771, -63.182385]} icon={schoolIcon}>
-                <Popup>U.E. Colegio Cristo Rey - Área segura</Popup>
-              </Marker>
-
-              <Marker position={[position.lat, position.lng]} icon={childIcon}>
-                <Popup>
-                  Nino monitoreado
-                  <br />
-                  Lat: {position.lat.toFixed(6)}
-                  <br />
-                  Lng: {position.lng.toFixed(6)}
-                </Popup>
-              </Marker>
-
-              <RecenterMap position={position} />
-            </MapContainer>
+                <p className="text-lg font-black">
+                  {inside ? "Zona segura" : "Alerta activa"}
+                </p>
+              </div>
+            </div>
           </div>
+        </header>
+
+        <section className="grid flex-1 gap-5 lg:grid-cols-[360px_1fr]">
+          <aside className="space-y-5">
+            <div
+              className={`rounded-4xl border p-5 shadow-2xl backdrop-blur-xl ${
+                inside
+                  ? "border-green-400/30 bg-green-500/10"
+                  : "border-red-400/40 bg-red-500/15"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-300">Niño monitoreado</p>
+                  <h2 className="mt-1 text-2xl font-black">Niño Demo</h2>
+                </div>
+
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-3xl shadow-xl">
+                  🧒
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-2xl bg-slate-950/50 p-4">
+                <p className="text-sm text-slate-400">
+                  Resultado del monitoreo
+                </p>
+                <p className="mt-1 text-base font-semibold text-slate-100">
+                  {lastMessage}
+                </p>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-slate-950/50 p-4">
+                  <p className="text-xs uppercase tracking-widest text-slate-400">
+                    Latitud
+                  </p>
+                  <p className="mt-2 font-mono text-sm font-bold">
+                    {position.lat.toFixed(6)}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-slate-950/50 p-4">
+                  <p className="text-xs uppercase tracking-widest text-slate-400">
+                    Longitud
+                  </p>
+                  <p className="mt-2 font-mono text-sm font-bold">
+                    {position.lng.toFixed(6)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-4xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Validación espacial</p>
+                  <h2 className="mt-1 text-xl font-black">PostGIS</h2>
+                </div>
+
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/20 text-2xl">
+                  🛰️
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl bg-slate-950/50 p-4">
+                <p className="text-sm font-semibold">
+                  {backendInside === null
+                    ? "Esperando respuesta del servidor..."
+                    : backendInside
+                      ? "El punto se encuentra dentro del polígono."
+                      : "El punto se encuentra fuera del polígono."}
+                </p>
+
+                <p className="mt-2 text-xs text-slate-400">
+                  La verificación se realiza usando la geometría almacenada en
+                  PostgreSQL/PostGIS.
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-4xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-slate-400">Registro de eventos</p>
+                  <h2 className="mt-1 text-xl font-black">Historial</h2>
+                </div>
+
+                <span className="rounded-full bg-red-500 px-4 py-2 text-sm font-black shadow-lg">
+                  {alertCount}
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {history.length === 0 ? (
+                  <div className="rounded-2xl bg-slate-950/50 p-4 text-sm text-slate-400">
+                    No se registraron alertas durante el monitoreo actual.
+                  </div>
+                ) : (
+                  history.map((item, index) => (
+                    <div
+                      key={`${item}-${index}`}
+                      className="rounded-2xl border border-white/5 bg-slate-950/50 p-4 text-sm text-slate-200"
+                    >
+                      {item}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </aside>
+
+          <section className="relative overflow-hidden rounded-4xl border border-white/10 bg-white/10 p-3 shadow-2xl backdrop-blur-xl">
+            {!inside && (
+              <div className="absolute left-6 right-6 top-6 z-999 rounded-2xl border border-red-200/40 bg-red-500/95 px-6 py-4 text-center text-lg font-black shadow-2xl">
+                🚨 Alerta: el niño salió del área segura del Colegio Cristo Rey
+              </div>
+            )}
+
+            <div className="absolute bottom-6 left-6 z-999 rounded-2xl border border-white/10 bg-slate-950/80 px-5 py-4 shadow-2xl backdrop-blur-xl">
+              <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
+                Área monitoreada
+              </p>
+              <p className="mt-1 font-bold text-white">
+                U.E. Colegio Cristo Rey
+              </p>
+            </div>
+
+            <div className="h-[calc(100vh-190px)] min-h-162.5 overflow-hidden rounded-3xl">
+              <MapContainer
+                center={[position.lat, position.lng]}
+                zoom={18}
+                scrollWheelZoom
+                className="h-full w-full"
+              >
+                <TileLayer
+                  attribution="&copy; OpenStreetMap contributors"
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+
+                <GeoJSON
+                  data={kinderPolygon}
+                  style={{
+                    color: inside ? "#22c55e" : "#ef4444",
+                    weight: 4,
+                    fillColor: inside ? "#22c55e" : "#ef4444",
+                    fillOpacity: 0.28,
+                  }}
+                />
+
+                <Marker position={[-17.791771, -63.182385]} icon={schoolIcon}>
+                  <Popup>U.E. Colegio Cristo Rey - Área segura</Popup>
+                </Marker>
+
+                <Marker
+                  position={[position.lat, position.lng]}
+                  icon={childIcon}
+                >
+                  <Popup>
+                    Niño monitoreado
+                    <br />
+                    Lat: {position.lat.toFixed(6)}
+                    <br />
+                    Lng: {position.lng.toFixed(6)}
+                  </Popup>
+                </Marker>
+
+                <RecenterMap position={position} />
+              </MapContainer>
+            </div>
+          </section>
         </section>
       </section>
     </main>
