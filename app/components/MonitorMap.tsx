@@ -12,7 +12,9 @@ import {
 import L from "leaflet";
 import { point } from "@turf/helpers";
 import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
+import { io, Socket } from "socket.io-client";
 import { kinderPolygon } from "../data/kinderPolygon";
+import PairingPanel from "./PairingPanel";
 
 type Position = {
   lat: number;
@@ -26,6 +28,21 @@ type BackendResponse = {
   longitud: number;
   dentroArea: boolean;
   alerta: unknown | null;
+};
+
+type DispositivoReal = {
+  ninoId: number;
+  nombreNino: string;
+  lat: number | null;
+  lng: number | null;
+  dentroArea: boolean | null;
+};
+
+type PosicionUpdate = {
+  ninoId: number;
+  latitud: number;
+  longitud: number;
+  dentroArea: boolean;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
@@ -57,6 +74,11 @@ export default function MonitorMap() {
   const [alertCount, setAlertCount] = useState(0);
   const [history, setHistory] = useState<string[]>([]);
   const lastInsideRef = useRef(true);
+
+  const [dispositivos, setDispositivos] = useState<
+    Record<number, DispositivoReal>
+  >({});
+  const socketRef = useRef<Socket | null>(null);
 
   const childIcon = useMemo(() => {
     return L.divIcon({
@@ -106,6 +128,74 @@ export default function MonitorMap() {
       iconAnchor: [23, 23],
     });
   }, []);
+
+  const dispositivoIcon = (dentroArea: boolean | null) =>
+    L.divIcon({
+      className: "",
+      html: `
+        <div style="
+          width: 42px;
+          height: 42px;
+          border-radius: 999px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: ${dentroArea === false ? "#ef4444" : "#a855f7"};
+          border: 4px solid white;
+          box-shadow: 0 12px 28px rgba(15, 23, 42, 0.45);
+          font-size: 20px;
+          transform: translate(-4px, -4px);
+        ">
+          📱
+        </div>
+      `,
+      iconSize: [42, 42],
+      iconAnchor: [21, 21],
+    });
+
+  const handleVinculado = (data: { ninoId: number; nombreNino: string }) => {
+    setDispositivos((prev) => ({
+      ...prev,
+      [data.ninoId]: {
+        ninoId: data.ninoId,
+        nombreNino: data.nombreNino,
+        lat: null,
+        lng: null,
+        dentroArea: null,
+      },
+    }));
+
+    socketRef.current?.emit("join-nino", { ninoId: data.ninoId });
+  };
+
+  useEffect(() => {
+    const socket = io(API_URL, { transports: ["websocket"] });
+    socketRef.current = socket;
+
+    socket.on("posicion:update", (data: PosicionUpdate) => {
+      setDispositivos((prev) => {
+        if (!prev[data.ninoId]) return prev;
+
+        return {
+          ...prev,
+          [data.ninoId]: {
+            ...prev[data.ninoId],
+            lat: data.latitud,
+            lng: data.longitud,
+            dentroArea: data.dentroArea,
+          },
+        };
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const dispositivosFueraDeArea = Object.values(dispositivos).filter(
+    (d) => d.dentroArea === false,
+  );
 
   const sendPositionToBackend = async (newPosition: Position) => {
     try {
@@ -356,6 +446,8 @@ export default function MonitorMap() {
                 )}
               </div>
             </div>
+
+            <PairingPanel onVinculado={handleVinculado} />
           </aside>
 
           <section className="relative overflow-hidden rounded-4xl border border-white/10 bg-white/10 p-3 shadow-2xl backdrop-blur-xl">
@@ -364,6 +456,16 @@ export default function MonitorMap() {
                 🚨 Alerta: el niño salió del área segura del Colegio Cristo Rey
               </div>
             )}
+
+            {dispositivosFueraDeArea.map((dispositivo) => (
+              <div
+                key={dispositivo.ninoId}
+                className="absolute left-6 right-6 top-24 z-999 rounded-2xl border border-purple-200/40 bg-purple-600/95 px-6 py-4 text-center text-lg font-black shadow-2xl"
+              >
+                🚨 Alerta: {dispositivo.nombreNino} (dispositivo real) salió del
+                área segura
+              </div>
+            ))}
 
             <div className="absolute bottom-6 left-6 z-999 rounded-2xl border border-white/10 bg-slate-950/80 px-5 py-4 shadow-2xl backdrop-blur-xl">
               <p className="text-xs uppercase tracking-[0.25em] text-slate-400">
@@ -412,6 +514,28 @@ export default function MonitorMap() {
                     Lng: {position.lng.toFixed(6)}
                   </Popup>
                 </Marker>
+
+                {Object.values(dispositivos)
+                  .filter((d) => d.lat !== null && d.lng !== null)
+                  .map((dispositivo) => (
+                    <Marker
+                      key={dispositivo.ninoId}
+                      position={[dispositivo.lat as number, dispositivo.lng as number]}
+                      icon={dispositivoIcon(dispositivo.dentroArea)}
+                    >
+                      <Popup>
+                        {dispositivo.nombreNino} (dispositivo real)
+                        <br />
+                        Lat: {dispositivo.lat?.toFixed(6)}
+                        <br />
+                        Lng: {dispositivo.lng?.toFixed(6)}
+                        <br />
+                        {dispositivo.dentroArea === false
+                          ? "Fuera del área segura"
+                          : "Dentro del área segura"}
+                      </Popup>
+                    </Marker>
+                  ))}
 
                 <RecenterMap position={position} />
               </MapContainer>
