@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { QRCodeSVG } from "qrcode.react";
+import { useAuth } from "../../lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
-const NINO_ID_DEMO = 1;
+type Nino = { id: number; nombre: string; activo: boolean };
 
 type VinculacionCompletada = {
   ninoId: number;
@@ -18,11 +19,24 @@ type Props = {
 };
 
 export default function PairingPanel({ onVinculado }: Props) {
+  const { authFetch } = useAuth();
+  const [ninos, setNinos] = useState<Nino[]>([]);
+  const [ninoId, setNinoId] = useState<string>("");
   const [codigo, setCodigo] = useState<string | null>(null);
   const [vinculado, setVinculado] = useState<VinculacionCompletada | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    authFetch("/ninos")
+      .then((data: Nino[]) => {
+        const activos = data.filter((n) => n.activo);
+        setNinos(activos);
+        if (activos.length > 0) setNinoId(String(activos[0].id));
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -31,6 +45,11 @@ export default function PairingPanel({ onVinculado }: Props) {
   }, []);
 
   const generarCodigo = async () => {
+    if (!ninoId) {
+      setError("Selecciona un niño primero.");
+      return;
+    }
+
     setCargando(true);
     setError(null);
     setVinculado(null);
@@ -39,7 +58,7 @@ export default function PairingPanel({ onVinculado }: Props) {
       const response = await fetch(`${API_URL}/vinculacion/generar`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ninoId: NINO_ID_DEMO }),
+        body: JSON.stringify({ ninoId: Number(ninoId) }),
       });
 
       if (!response.ok) {
@@ -87,6 +106,24 @@ export default function PairingPanel({ onVinculado }: Props) {
         </div>
       </div>
 
+      <div className="mt-4">
+        <label className="text-xs uppercase tracking-widest text-slate-400">
+          Niño a monitorear
+        </label>
+        <select
+          value={ninoId}
+          onChange={(e) => setNinoId(e.target.value)}
+          className="mt-1 w-full rounded-xl border border-white/10 bg-slate-950/50 px-4 py-3 text-sm outline-none focus:border-cyan-400"
+        >
+          {ninos.length === 0 && <option value="">No hay niños activos</option>}
+          {ninos.map((n) => (
+            <option key={n.id} value={n.id}>
+              {n.nombre}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {vinculado ? (
         <div className="mt-4 rounded-2xl bg-green-500/10 p-4 text-sm">
           <p className="font-semibold text-green-300">
@@ -121,7 +158,7 @@ export default function PairingPanel({ onVinculado }: Props) {
       <button
         type="button"
         onClick={generarCodigo}
-        disabled={cargando}
+        disabled={cargando || !ninoId}
         className="mt-4 w-full rounded-2xl bg-cyan-500 px-4 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-400 disabled:opacity-50"
       >
         {cargando

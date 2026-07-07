@@ -1,8 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { GeoJSON, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import {
+  GeoJSON,
+  MapContainer,
+  Marker,
+  Popup,
+  TileLayer,
+  useMap,
+} from "react-leaflet";
 import L from "leaflet";
+import { useSearchParams } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import PairingPanel from "./PairingPanel";
 import { useAuth } from "../../lib/auth";
@@ -57,8 +65,37 @@ const dispositivoIcon = (dentroArea: boolean | null) =>
     iconAnchor: [21, 21],
   });
 
+// Hace zoom automático al polígono de la zona indicada en la URL (?zona=ID)
+function EnfocarZona({
+  zonas,
+  zonaId,
+}: {
+  zonas: Zona[];
+  zonaId: string | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!zonaId) return;
+
+    const zona = zonas.find((z) => String(z.id) === zonaId);
+    if (!zona?.geojson?.coordinates?.[0]?.length) return;
+
+    // GeoJSON viene en [lng, lat]; Leaflet necesita [lat, lng]
+    const puntos = zona.geojson.coordinates[0].map(
+      ([lng, lat]) => [lat, lng] as [number, number],
+    );
+
+    map.fitBounds(puntos, { maxZoom: 18, padding: [40, 40] });
+  }, [zonaId, zonas, map]);
+
+  return null;
+}
+
 export default function MonitorMap() {
   const { token, authFetch } = useAuth();
+  const searchParams = useSearchParams();
+  const zonaEnfocada = searchParams.get("zona");
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [dispositivos, setDispositivos] = useState<
     Record<number, DispositivoReal>
@@ -186,22 +223,29 @@ export default function MonitorMap() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
+                <EnfocarZona zonas={zonas} zonaId={zonaEnfocada} />
+
                 {zonas
                   .filter((z) => z.activo)
-                  .map((zona) => (
-                    <GeoJSON
-                      key={zona.id}
-                      data={zona.geojson as any}
-                      style={{
-                        color: "#22c55e",
-                        weight: 3,
-                        fillColor: "#22c55e",
-                        fillOpacity: 0.2,
-                      }}
-                    >
-                      <Popup>{zona.nombre}</Popup>
-                    </GeoJSON>
-                  ))}
+                  .map((zona) => {
+                    const enfocada = String(zona.id) === zonaEnfocada;
+                    return (
+                      <GeoJSON
+                        // key incluye el estado enfocado para forzar el
+                        // re-render del estilo al cambiar la zona seleccionada
+                        key={`${zona.id}-${enfocada}`}
+                        data={zona.geojson as any}
+                        style={{
+                          color: enfocada ? "#06b6d4" : "#22c55e",
+                          weight: enfocada ? 4 : 3,
+                          fillColor: enfocada ? "#06b6d4" : "#22c55e",
+                          fillOpacity: enfocada ? 0.35 : 0.2,
+                        }}
+                      >
+                        <Popup>{zona.nombre}</Popup>
+                      </GeoJSON>
+                    );
+                  })}
 
                 {Object.values(dispositivos)
                   .filter((d) => d.lat !== null && d.lng !== null)
