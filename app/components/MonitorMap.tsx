@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   GeoJSON,
   MapContainer,
@@ -15,12 +15,29 @@ import { io, Socket } from "socket.io-client";
 import PairingPanel from "./PairingPanel";
 import { useAuth } from "../../lib/auth";
 
-type DispositivoReal = {
+type NinoMonitor = {
   ninoId: number;
   nombreNino: string;
   lat: number | null;
   lng: number | null;
   dentroArea: boolean | null;
+  vinculado: boolean;
+  enLinea: boolean;
+  ultimaConexion: string | null;
+  ultimaSenal: string | null;
+};
+
+type PanelNino = {
+  id: number;
+  nombre: string;
+  ultimaPosicion: {
+    latitud: number;
+    longitud: number;
+    dentroArea: boolean;
+    createdAt: string;
+  } | null;
+  dispositivo: { vinculado: boolean; ultimaConexion: string | null };
+  enLinea: boolean;
 };
 
 type PosicionUpdate = {
@@ -29,6 +46,8 @@ type PosicionUpdate = {
   longitud: number;
   dentroArea: boolean;
 };
+
+type PresenciaUpdate = { ninoId: number; enLinea: boolean };
 
 type Zona = {
   id: number;
@@ -41,7 +60,17 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
 const CENTRO_MAPA: [number, number] = [-17.791771, -63.182385];
 
-const dispositivoIcon = (dentroArea: boolean | null) =>
+function haceCuanto(iso: string | null): string {
+  if (!iso) return "nunca";
+  const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (min < 1) return "hace instantes";
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  return `hace ${Math.floor(h / 24)} d`;
+}
+
+const dispositivoIcon = (dentroArea: boolean | null, enLinea: boolean) =>
   L.divIcon({
     className: "",
     html: `
@@ -56,6 +85,7 @@ const dispositivoIcon = (dentroArea: boolean | null) =>
         border: 4px solid white;
         box-shadow: 0 12px 28px rgba(15, 23, 42, 0.45);
         font-size: 20px;
+        opacity: ${enLinea ? 1 : 0.45};
         transform: translate(-4px, -4px);
       ">
         📱
@@ -97,32 +127,57 @@ export default function MonitorMap() {
   const searchParams = useSearchParams();
   const zonaEnfocada = searchParams.get("zona");
   const [zonas, setZonas] = useState<Zona[]>([]);
-  const [dispositivos, setDispositivos] = useState<
-    Record<number, DispositivoReal>
-  >({});
+  const [ninos, setNinos] = useState<Record<number, NinoMonitor>>({});
+  const [socketListo, setSocketListo] = useState(false);
   const socketRef = useRef<Socket | null>(null);
 
   const handleVinculado = (data: { ninoId: number; nombreNino: string }) => {
-    setDispositivos((prev) => ({
+    setNinos((prev) => ({
       ...prev,
       [data.ninoId]: {
         ninoId: data.ninoId,
         nombreNino: data.nombreNino,
-        lat: null,
-        lng: null,
-        dentroArea: null,
+        lat: prev[data.ninoId]?.lat ?? null,
+        lng: prev[data.ninoId]?.lng ?? null,
+        dentroArea: prev[data.ninoId]?.dentroArea ?? null,
+        vinculado: true,
+        enLinea: prev[data.ninoId]?.enLinea ?? false,
+        ultimaConexion: prev[data.ninoId]?.ultimaConexion ?? null,
+        ultimaSenal: prev[data.ninoId]?.ultimaSenal ?? null,
       },
     }));
 
     socketRef.current?.emit("join-nino", { ninoId: data.ninoId });
   };
 
+  // Carga inicial: zonas + panel (todos los niños con su última posición y estado)
   useEffect(() => {
     authFetch("/zonas")
       .then((data: Zona[]) => setZonas(data))
       .catch(console.error);
+
+    authFetch("/monitoreo/panel")
+      .then((data: PanelNino[]) => {
+        const mapa: Record<number, NinoMonitor> = {};
+        for (const p of data) {
+          mapa[p.id] = {
+            ninoId: p.id,
+            nombreNino: p.nombre,
+            lat: p.ultimaPosicion?.latitud ?? null,
+            lng: p.ultimaPosicion?.longitud ?? null,
+            dentroArea: p.ultimaPosicion?.dentroArea ?? null,
+            vinculado: p.dispositivo.vinculado,
+            enLinea: p.enLinea,
+            ultimaConexion: p.dispositivo.ultimaConexion,
+            ultimaSenal: p.ultimaPosicion?.createdAt ?? null,
+          };
+        }
+        setNinos(mapa);
+      })
+      .catch(console.error);
   }, []);
 
+  // Socket en vivo
   useEffect(() => {
     const socket = io(API_URL, {
       transports: ["websocket"],
@@ -130,30 +185,64 @@ export default function MonitorMap() {
     });
     socketRef.current = socket;
 
-    socket.on("posicion:update", (data: PosicionUpdate) => {
-      setDispositivos((prev) => {
-        if (!prev[data.ninoId]) return prev;
+    socket.on("auth:ok", () => setSocketListo(true));
 
+    socket.on("posicion:update", (data: PosicionUpdate) => {
+      setNinos((prev) => {
+        const actual = prev[data.ninoId];
         return {
           ...prev,
           [data.ninoId]: {
-            ...prev[data.ninoId],
+            ...(actual ?? {
+              ninoId: data.ninoId,
+              nombreNino: `Niño ${data.ninoId}`,
+              vinculado: true,
+              ultimaConexion: null,
+            }),
             lat: data.latitud,
             lng: data.longitud,
             dentroArea: data.dentroArea,
-          },
+            enLinea: true,
+            ultimaSenal: new Date().toISOString(),
+          } as NinoMonitor,
+        };
+      });
+    });
+
+    socket.on("presencia:update", (data: PresenciaUpdate) => {
+      setNinos((prev) => {
+        if (!prev[data.ninoId]) return prev;
+        return {
+          ...prev,
+          [data.ninoId]: { ...prev[data.ninoId], enLinea: data.enLinea },
         };
       });
     });
 
     return () => {
       socket.disconnect();
+      setSocketListo(false);
     };
   }, [token]);
 
-  const dispositivosFueraDeArea = Object.values(dispositivos).filter(
-    (d) => d.dentroArea === false,
+  const idsKey = Object.keys(ninos).sort().join(",");
+
+  // Unirse a la sala de cada niño cuando el socket esté listo o cambie la lista
+  useEffect(() => {
+    if (!socketListo) return;
+    for (const id of Object.keys(ninos)) {
+      socketRef.current?.emit("join-nino", { ninoId: Number(id) });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [socketListo, idsKey]);
+
+  const listaNinos = useMemo(
+    () => Object.values(ninos).sort((a, b) => a.ninoId - b.ninoId),
+    [ninos],
   );
+
+  const enLineaCount = listaNinos.filter((n) => n.enLinea).length;
+  const ninosFueraDeArea = listaNinos.filter((n) => n.dentroArea === false);
 
   return (
     <main className="min-h-screen bg-[#020617] text-white">
@@ -181,9 +270,13 @@ export default function MonitorMap() {
             <div className="rounded-4xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-slate-400">Dispositivos activos</p>
+                  <p className="text-sm text-slate-400">En línea ahora</p>
                   <h2 className="mt-1 text-2xl font-black">
-                    {Object.keys(dispositivos).length}
+                    {enLineaCount}
+                    <span className="text-base font-medium text-slate-400">
+                      {" "}
+                      / {listaNinos.length} niños
+                    </span>
                   </h2>
                 </div>
 
@@ -198,16 +291,63 @@ export default function MonitorMap() {
               </div>
             </div>
 
+            <div className="rounded-4xl border border-white/10 bg-white/10 p-5 shadow-2xl backdrop-blur-xl">
+              <p className="text-sm font-semibold text-slate-200">Niños</p>
+              <ul className="mt-3 space-y-2">
+                {listaNinos.length === 0 && (
+                  <li className="text-sm text-slate-400">
+                    No hay niños registrados.
+                  </li>
+                )}
+                {listaNinos.map((n) => {
+                  const estado = !n.vinculado
+                    ? { dot: "bg-slate-500", txt: "Sin celular vinculado" }
+                    : n.enLinea
+                      ? { dot: "bg-green-400", txt: "En línea" }
+                      : {
+                          dot: "bg-amber-400",
+                          txt: `Sin señal · ${haceCuanto(
+                            n.ultimaSenal ?? n.ultimaConexion,
+                          )}`,
+                        };
+
+                  return (
+                    <li
+                      key={n.ninoId}
+                      className="flex items-center justify-between rounded-xl bg-slate-950/40 px-3 py-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`h-2.5 w-2.5 rounded-full ${estado.dot}`}
+                        />
+                        <div>
+                          <p className="text-sm font-semibold">
+                            {n.nombreNino}
+                          </p>
+                          <p className="text-xs text-slate-400">{estado.txt}</p>
+                        </div>
+                      </div>
+                      {n.dentroArea === false && (
+                        <span className="rounded-lg bg-red-500/20 px-2 py-1 text-xs font-bold text-red-300">
+                          Fuera
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
             <PairingPanel onVinculado={handleVinculado} />
           </aside>
 
           <section className="relative overflow-hidden rounded-4xl border border-white/10 bg-white/10 p-3 shadow-2xl backdrop-blur-xl">
-            {dispositivosFueraDeArea.map((dispositivo) => (
+            {ninosFueraDeArea.map((nino) => (
               <div
-                key={dispositivo.ninoId}
+                key={nino.ninoId}
                 className="absolute left-6 right-6 top-6 z-999 rounded-2xl border border-red-200/40 bg-red-500/95 px-6 py-4 text-center text-lg font-black shadow-2xl"
               >
-                🚨 Alerta: {dispositivo.nombreNino} salió del área segura
+                🚨 Alerta: {nino.nombreNino} salió del área segura
               </div>
             ))}
 
@@ -247,24 +387,30 @@ export default function MonitorMap() {
                     );
                   })}
 
-                {Object.values(dispositivos)
-                  .filter((d) => d.lat !== null && d.lng !== null)
-                  .map((dispositivo) => (
+                {listaNinos
+                  .filter((n) => n.lat !== null && n.lng !== null)
+                  .map((nino) => (
                     <Marker
-                      key={dispositivo.ninoId}
-                      position={[dispositivo.lat as number, dispositivo.lng as number]}
-                      icon={dispositivoIcon(dispositivo.dentroArea)}
+                      key={nino.ninoId}
+                      position={[nino.lat as number, nino.lng as number]}
+                      icon={dispositivoIcon(nino.dentroArea, nino.enLinea)}
                     >
                       <Popup>
-                        {dispositivo.nombreNino}
+                        <b>{nino.nombreNino}</b>
                         <br />
-                        Lat: {dispositivo.lat?.toFixed(6)}
+                        {nino.enLinea ? "🟢 En línea" : "🟡 Sin señal"}
                         <br />
-                        Lng: {dispositivo.lng?.toFixed(6)}
+                        Lat: {nino.lat?.toFixed(6)}
                         <br />
-                        {dispositivo.dentroArea === false
+                        Lng: {nino.lng?.toFixed(6)}
+                        <br />
+                        {nino.dentroArea === false
                           ? "Fuera del área segura"
                           : "Dentro del área segura"}
+                        <br />
+                        <span style={{ color: "#64748b" }}>
+                          Última señal: {haceCuanto(nino.ultimaSenal)}
+                        </span>
                       </Popup>
                     </Marker>
                   ))}
